@@ -1,0 +1,10 @@
+{
+  "targets": [
+    "c.tot_usda.a622_w.pct",
+    "s.tot_usda.a624_w.pct",
+    "oc_usda.c1059_w.pct",
+    "n.tot_usda.a623_w.pct",
+    "clay.tot_usda.a334_w.pct"
+  ],
+  "model_types": ["cubist", "random_forest", "plsr"]
+}
