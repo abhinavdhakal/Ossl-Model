@@ -131,12 +131,10 @@ if __name__ == "__main__":
     spectra_type = "mir"  # Adjust as needed
     log_targets = config.get('log_targets', [])  # Get list of log-transformed targets from config
 
-    #mir_data_path = './../datasets/neospectra_mir_v1.2.csv'
-    mir_data_path = './../datasets/ossl_mir_L0_v1.2.csv'
+    mir_data_path = './../datasets/neospectra_mir_v1.2.csv'
 
 
-#soillab_path = './../datasets/neospectra_soillab_v1.2.csv'
-    soillab_path = './../datasets/ossl_soillab_L0_v1.2.csv'
+    soillab_path = './../datasets/neospectra_soillab_v1.2.csv'
 
 
     spectral_data = pd.read_csv(mir_data_path)
@@ -144,14 +142,12 @@ if __name__ == "__main__":
     soillab_data = pd.read_csv(soillab_path)
 
     merged_data = spectral_data.merge(soillab_data, on=id_column)
-
-
-
-
-
-
-#train_test_path = './../train_test_dataset/train_test_splits_mir_neo.json'
-    train_test_path = './../train_test_dataset/train_test_splits_mir.json'
+    
+    
+    
+    
+    
+    train_test_path = './../train_test_dataset/train_test_splits_mir_neo.json'
 
     number_of_data = int(input("Enter the number of data to use for split: "))
 
@@ -187,6 +183,6 @@ if __name__ == "__main__":
         
         
         output_model_suffix = "_logged" if target_column in log_targets else ""
-        output_model_path = f'{folder_path}/trained_models/cubist_model_{spectra_type}_{target_column}_{number_of_data}{output_model_suffix}.joblib'
+        output_model_path = f'{folder_path}/trained_models/cubist_model_neo_{spectra_type}_{target_column}_{number_of_data}{output_model_suffix}.joblib'
 
         train_cubist_model(train_data, test_data, target_column, best_params, output_model_path)

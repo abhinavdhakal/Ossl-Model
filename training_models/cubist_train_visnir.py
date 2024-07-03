@@ -7,10 +7,32 @@ import os
 import json
 import optuna
 
-def load_data(train_data_path, test_data_path):
-    # Load training and testing data from CSV files
-    train_data = pd.read_csv(train_data_path)
-    test_data = pd.read_csv(test_data_path)
+def load_data(merged_data, train_test_path, id_column, target_column, number_of_data):
+
+
+    with open(train_test_path, 'r') as json_file:
+        all_splits = json.load(json_file)
+
+    key = f'{target_column}_{number_of_data}'
+
+    if(f'train_{key}' not in all_splits or f'test_{key}' not in all_splits):
+        return [],[]
+
+
+    train_ids = all_splits[f'train_{key}']
+    test_ids = all_splits[f'test_{key}']
+
+    print(f"Train ids : {len(train_ids)}")
+    print(f"Test ids : {len(test_ids)}")
+
+
+    train_data = merged_data[merged_data[id_column].isin(train_ids)]
+    test_data = merged_data[merged_data[id_column].isin(test_ids)]
+
+    print(f"Train data shape: {train_data.shape}")
+    print(f"Test data shape: {test_data.shape}")
+
+
     return train_data, test_data
 
 def evaluate_model(y_true, y_pred):
@@ -18,30 +40,25 @@ def evaluate_model(y_true, y_pred):
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     return rmse
 
-def snv(input_data):
-    # Standard Normal Variate (SNV) transformation
-    mean = np.mean(input_data, axis=1, keepdims=True)
-    std_dev = np.std(input_data, axis=1, keepdims=True)
-    return (input_data - mean) / std_dev
 
 def preprocess_data(data, target_column):
-    # Apply SNV to spectral data and log1p to target data
-    X = data.drop(columns=[target_column])
+    spectral_columns = [col for col in data.columns if 'scan_mir' in col or 'scan_visnir' in col or 'scan_nir' in col]
+
+    X = data[spectral_columns]
     y = data[target_column]
+    
+    
+    for target_column in log_targets:
+        y = np.log1p(y)
 
-    # Apply SNV to each row of the spectra data
-    X_snv = snv(X.values)
-    X_snv = pd.DataFrame(X_snv, columns=X.columns)
+    return X, y
 
-    # Apply log1p transformation to the target column
-    y_log1p = np.log1p(y)
 
-    return X_snv, y_log1p
 
 def optimize(train_data, test_data, target_column):
     # Define the objective function for hyperparameter optimization
     def objective(trial):
-        # Sample a subset of the training data (e.g., 1000 samples)
+        # Sample a subset of the training data
         train_data_subset = train_data.sample(n=1000, random_state=42)
 
         # Define hyperparameters to optimize
@@ -97,30 +114,72 @@ def train_cubist_model(train_data, test_data, target_column, best_params, output
     joblib.dump(model, output_model_path)
     print(f"Trained model saved to: {output_model_path}")
 
+
+
+
+
+
+
+
 if __name__ == "__main__":
+  
+    folder_path = './..'
+    id_column = 'id.layer_uuid_txt'  
+
+
     # Load configuration from JSON file
-    with open('./../data_processing/config.json', 'r') as f:
+    with open(folder_path + '/config.json', 'r') as f:
         config = json.load(f)
     
     # File paths for training and testing datasets
     spectra_type = "visnir"  # Adjust as needed
+    log_targets = config.get('log_targets', [])  # Get list of log-transformed targets from config
+
+    visnir_data_path = './../datasets/ossl_visnir_L0_v1.2.csv'
+
+
+#soillab_path = './../datasets/neospectra_soillab_v1.2.csv'
+    soillab_path = './../datasets/ossl_soillab_L0_v1.2.csv'
+
+
+    spectral_data = pd.read_csv(visnir_data_path)
+
+    soillab_data = pd.read_csv(soillab_path)
+
+    merged_data = spectral_data.merge(soillab_data, on=id_column)
+
+
+
+
+
+
+#train_test_path = './../train_test_dataset/train_test_splits_mir_neo.json'
+    train_test_path = './../train_test_dataset/train_test_splits_visnir.json'
+
+    number_of_data = int(input("Enter the number of data to use for split: "))
+
+
 
     for target_column in config['targets']:
         # Loop over each target column in the configuration file
         print(f"Training model for target: {target_column}")
             
         # File paths for training and testing datasets for the current target
-        train_data_path = f'./../train_test_dataset/train_data_{spectra_type}_{target_column}.csv'
-        test_data_path = f'./../train_test_dataset/test_data_{spectra_type}_{target_column}.csv'
+
+        # Check if data files exist
+        if not (os.path.exists(train_test_path)):
+            print(f"Data files not found for target: {target_column}. Skipping...")
+            continue
 
         # Load data
         print(f"Loading data for target: {target_column}")
-        train_data, test_data = load_data(train_data_path, test_data_path)
+        train_data, test_data = load_data(merged_data, train_test_path, id_column,target_column, number_of_data)
 
-        ## sampling just 15k for model
+        # Check if there are enough samples available
+        if len(train_data) == 0:
+            print(f"No training data available for target: {target_column}. Skipping...")
+            continue
 
-        ##train_data = train_data.sample(n=15000, random_state=42)
-            
         # Optimize hyperparameters
         print("Optimizing hyperparameters...")
         best_params = optimize(train_data, test_data, target_column)
@@ -128,5 +187,9 @@ if __name__ == "__main__":
         # Train and save the model with full data
         print(f"Training and saving model for target: {target_column}")
         print(f"Train data shape: {train_data.shape}, test data shape: {test_data.shape}")
-        output_model_path = f'./../trained_models/cubist_model_{spectra_type}_{target_column}.joblib'
+        
+        
+        output_model_suffix = "_logged" if target_column in log_targets else ""
+        output_model_path = f'{folder_path}/trained_models/cubist_model_{spectra_type}_{target_column}_{number_of_data}{output_model_suffix}.joblib'
+
         train_cubist_model(train_data, test_data, target_column, best_params, output_model_path)

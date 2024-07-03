@@ -111,7 +111,7 @@ def log_evaluation_results(result, csv_file_path):
 if __name__ == "__main__":
     
     folder_path = './..'
-    id_column = 'id.layer_uuid_txt'  
+    id_column = 'id.sample_local_c'  
 
 
     number_of_data = int(input("Enter the number of data to use for split: "))
@@ -122,20 +122,20 @@ if __name__ == "__main__":
         config = json.load(f)
 
     # File paths for testing datasets
-    spectra_type = "visnir"  # Adjust as needed
+    spectra_type = "nir"  # Adjust as needed
     log_targets = config.get('log_targets', [])  # Get list of log-transformed targets from config
 
 
 
 
-    visnir_data_path = './../datasets/ossl_visnir_L0_v1.2.csv'
+    nir_data_path = './../datasets/neospectra_nir_v1.2.csv'
 
 
 #soillab_path = './../datasets/neospectra_soillab_v1.2.csv'
-    soillab_path = './../datasets/ossl_soillab_L0_v1.2.csv'
+    soillab_path = './../datasets/neospectra_soillab_v1.2.csv'
 
 
-    spectral_data = pd.read_csv(visnir_data_path)
+    spectral_data = pd.read_csv(nir_data_path)
 
     soillab_data = pd.read_csv(soillab_path)
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
         # Load the trained model
         is_logged = target_column in log_targets
         model_suffix = "_logged" if is_logged else ""
-        model_path = f'{folder_path}/trained_models/cubist_model_{spectra_type}_{target_column}_{number_of_data}{model_suffix}.joblib'
+        model_path = f'{folder_path}/trained_models/cubist_model_neo_{spectra_type}_{target_column}_{number_of_data}{model_suffix}.joblib'
         
         
         
@@ -170,7 +170,7 @@ if __name__ == "__main__":
 
 
         # File paths for testing datasets for the current target
-        train_test_path = f'{folder_path}/train_test_dataset/train_test_splits_{spectra_type}.json'
+        train_test_path = f'{folder_path}/train_test_dataset/train_test_splits_{spectra_type}_neo.json'
 
         # Load test data
         print(f"Loading test data for target: {target_column}")
@@ -195,7 +195,7 @@ if __name__ == "__main__":
 
         # Output the image of predicted vs actual values
         output_image_suffix = "_logged" if is_logged else ""
-        output_image_path = f'{folder_path}/evaluation_results/{spectra_type}_{target_column}_evaluation_{number_of_data}{output_image_suffix}.png'
+        output_image_path = f'{folder_path}/evaluation_results/neo_{spectra_type}_{target_column}_evaluation_{number_of_data}{output_image_suffix}.png'
         os.makedirs(os.path.dirname(output_image_path), exist_ok=True)
         plot_evaluation(y_test, y_pred, rmse, lccc, r2, output_image_path, target_column)
         print(f"Evaluation image saved to: {output_image_path}")
@@ -209,7 +209,7 @@ if __name__ == "__main__":
             'no_of_samples': number_of_data,  # Adjust as needed
             'train_test_split_ratio': 0.2,  # Adjust as needed
             'target': target_column,
-            'spectra_type': spectra_type,
+            'spectra_type': 'neo ' + spectra_type,
             'rmse': rmse,
             'lccc': lccc,
             'r_squared': r2,

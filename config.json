@@ -1,0 +1,17 @@
+{
+  "targets": [
+    "c.tot_usda.a622_w.pct",
+    "s.tot_usda.a624_w.pct",
+    "oc_usda.c729_w.pct",
+    "n.tot_usda.a623_w.pct",
+    "clay.tot_usda.a334_w.pct",
+    "sand.tot_usda.c60_w.pct",
+    "silt.tot_usda.c62_w.pct"
+  ],
+  "model_types": ["cubist", "random_forest", "plsr"],
+  "log_targets": [
+    "c.tot_usda.a622_w.pct",
+    "oc_usda.c729_w.pct",
+    "n.tot_usda.a623_w.pct"
+  ]
+}
